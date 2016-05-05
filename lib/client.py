@@ -19,18 +19,24 @@ def _handshake(c):
         return True
 
 
-def _listen(c):
+def _send_message(c, message):
+    c.send(message)
+
+
+def _listen(c, handler):
     while True:
-        print _receive(c)
+        handler(_receive(c))
         time.sleep(0.01)
 
 
 def _receive(c):
-    return c.recv(16).rstrip().lower()
+    return c.recv(128).rstrip().lower()
 
 
 def _subscribe(c):
     c.send("subscribe")
+    # the server should always respond SUBSCRIBED
+    # to let us know it worked ok
     expected = "subscribed"
     response = _receive(c)
     if expected != response:
@@ -46,9 +52,7 @@ def _connect(ip=settings.ip, port=settings.port):
             raise HandShakeError(
                 "could not perform handshake with share server"
             )
-        if _subscribe(client) is False:
-            raise SubscriptionError("could not subscribe to share server")
-        _listen(client)
+        return client
 
     except socket.error as error:
         raise ConnectionError("connecting failed with error <%s>.\n"
@@ -56,8 +60,42 @@ def _connect(ip=settings.ip, port=settings.port):
                               "sorry it didn't work out."
                               % (error, settings.port))
 
-    finally:
-        client.close()
+
+# share a new page
+#
+# user:
+#    the townie who created this page without the ~
+#    (insom, karlen, &c.)
+# url:
+#    the relative location of the page, so
+#    ~joe/modestproposal.html would be 'modestproposal.html'
+# description:
+#    an optional description of the link
+# returns: True or False depending on if it succeeds or not
+# throws:
+#     ConnectionError
+#     HandShakeError
+#     ShareError
+def share(user, url, description=""):
+    url = "https://%s/~%s/%s" % ("tilde.town", user, url)
+    client = _connect()
+    _send_message(client, "%s %s %s" % ("share", url, description))
+    client.close()
+
+
+# listen for new shares
+#
+# handler:
+#     the method to call with the received data
+# throws:
+#     ConnectionError
+#     HandShakeError
+#     ShareError
+#     SubscriptionError
+def listen(handler):
+    client = _connect()
+    _listen(client, handler)
+
 
 if __name__ == "__main__":
-    _connect()
+    share("jumblesale", "ksp.html", "the continuing adventures of ksp")
