@@ -87,6 +87,7 @@ def _connect(ip=settings.ip, port=settings.port):
 #     ShareError
 def share(user, page, description=""):
     client = _connect()
+    time.sleep(0.1)
     _send_message(client, "%s %s %s %s" % ("share", user, page, description))
     client.close()
 
