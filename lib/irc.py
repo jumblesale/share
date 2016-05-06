@@ -51,6 +51,12 @@ def _listen_to_irc(s, channel):
 
         # get data from the server
         msg = s.recv(1024).rstrip()
+
+        # was this a ping request?
+        if msg[0:5] == "PING":
+            s.send("PONG :pingis\n")
+            continue
+
         try:
             # nick appears between first : and ! as in :jumblesale! above
             nick = msg[(msg.index(":") + 1):(msg.index("!"))]
@@ -76,10 +82,6 @@ def _listen_to_irc(s, channel):
                 _send_message(s, channel,
                               'sharing failed with error "%s"' % err)
             continue
-
-        # respond to pings
-        if msg.find("PING :") != -1:
-            s.send("PONG :pingis\n")
 
 
 # let the channel know there was a new share
@@ -126,6 +128,7 @@ def _listen_to_server(s, channel):
 # this callback will be triggered whenever the server passes along a new share
 # return False to halt listening
 def _respond_to_shares(share_data, irc_socket, channel):
+    print "received %s" % share_data
     global terminate
     if terminate is True:
         return False
