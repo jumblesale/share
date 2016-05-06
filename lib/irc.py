@@ -51,9 +51,9 @@ def _listen_to_irc(s, channel):
 
         # get data from the server
         msg = s.recv(1024).rstrip()
-        
+
         # was this a ping request?
-        if msg[0:4] == "PING":
+        if msg[0:len("PING")] == "PING":
             s.send("PONG :pingis\n")
             continue
 
@@ -64,6 +64,12 @@ def _listen_to_irc(s, channel):
             contents = msg.split(":")[2]
         except (ValueError, IndexError):
             # it didn't have a nick or a message, we don't care
+            continue
+
+        # was this a rollcall command?
+        if contents[0:len("!rollcall")].lower() == "!rollcall":
+            _send_message(s, channel, "share bot! use me to share creations")
+            _send_message(s, channel, _usage())
             continue
 
         # was the message to try and share something?
