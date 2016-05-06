@@ -70,9 +70,9 @@ def _listen_to_irc(s, channel):
         if "!share" == contents[0:6].lower():
             # ignore the actual '!share' bit
             # list comprehensions are tass af
-            to_share = contents[contents.index(" ") + 1:]
+            args = " ".join(contents.split(" ")[1:])
             try:
-                user, page, description = _share(to_share)
+                user, page, description = _share(args)
             except FormatError:
                 # the message wasn't right
                 _send_message(s, channel, "unexpected arguments :(")
