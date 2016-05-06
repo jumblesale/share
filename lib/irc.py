@@ -51,8 +51,7 @@ def _listen_to_irc(s, channel):
 
         # get data from the server
         msg = s.recv(1024).rstrip()
-
-        print msg[0:4]
+        
         # was this a ping request?
         if msg[0:4] == "PING":
             s.send("PONG :pingis\n")
