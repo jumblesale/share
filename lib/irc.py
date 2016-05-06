@@ -79,7 +79,7 @@ def _listen_to_irc(s, channel):
 
         # respond to pings
         if msg.find("PING :") != -1:
-            s.send("PONG :hello\n")
+            s.send("PONG :pingis\n")
 
 
 # let the channel know there was a new share
@@ -102,7 +102,7 @@ def _usage():
     return "to share a new thing just say !share <user> <page> " \
            "<optional description> - where user is a a townie " \
            "(without the ~), page is the path to the page (so " \
-           "like 'blog/2015-05-21.html) and the description can " \
+           "like 'blog/2015-05-21.html') and the description can " \
            "be anything you like, or nothing!"
 
 
