@@ -3,6 +3,7 @@ import socket
 import time
 import settings
 import threading
+import users
 
 # a flag to get us out of listening
 terminate = False
@@ -14,26 +15,31 @@ class FormatError(Exception): pass
 
 
 # connect to the share server and send along a new share
-def _share(data):
+def _share(user, page, description):
     print 'sharing "%s"...' % data
-    # data will be like "<user> <page> <description here...>"
-    # so we split on the spaces
     try:
-        parts = data.split(" ")
-        user = parts[0]
-        page = parts[1]
-        # then just get everything from the 2nd space to the end
-        description = " ".join(parts[2:])
         client.share(user, page, description)
-        # we return the parts cause they're useful for later
-        return user, page, description
-    except IndexError:
-        raise FormatError
     # the client could fail so let's deal with it
     except(client.ConnectionError,
            client.HandShakeError,
            client.ShareError) as err:
         raise ShareError(err)
+
+
+def _format_share(share_message):
+    # data will be like "<user> <page> <description here...>"
+    # so we split on the spaces
+    try:
+        parts = share_message.split(" ")
+        user = parts[0]
+        page = parts[1]
+        # then just get everything from the 2nd space to the end
+        description = " ".join(parts[2:])
+
+        # we return the parts cause they're useful for later
+        return user, page, description
+    except IndexError:
+        raise FormatError
 
 
 def _send_message(s, channel, msg):
@@ -78,7 +84,23 @@ def _listen_to_irc(s, channel):
             # list comprehensions are tass af
             args = " ".join(contents.split(" ")[1:])
             try:
-                user, page, description = _share(args)
+                user, page, description = _format_share(args)
+                if users.user_exists(user) is False:
+                    _send_message(s, channel,
+                                  "user %s doesn't seem to exist!" % user)
+                    continue
+                if users.user_page_exists(user, page) is False:
+                    _send_message(s, channel,
+                                  "~%s/public_html/%s doesn't seem to exist!" %
+                                  (user, page))
+                    continue
+                if len(description) > 128:
+                    _send_message(s, channel,
+                                  "that description is a little long, try "
+                                  "something 128 characters or shorter?")
+                    continue
+                # validation succeeded!
+                _share(user, page, description)
             except FormatError:
                 # the message wasn't right
                 _send_message(s, channel, "unexpected arguments :(")
@@ -125,6 +147,7 @@ def _listen_to_server(s, channel):
         client.SubscriptionError,
         client.ShareError
     ):
+        # something went wrong, shut everything down
         global terminate
         terminate = True
         print "something went wrong connecting to the share server!"
