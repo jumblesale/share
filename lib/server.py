@@ -70,6 +70,8 @@ def _share(msg):
         global _connections
         for connection_id, connection in _subscribers.iteritems():
             _send_share(connection, user, page, description)
+        # save it to disk
+        store.add(user, page, description)
         return True
     except IndexError:
         logger.log('"%s" was malformed' % msg)

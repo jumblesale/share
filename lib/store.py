@@ -5,7 +5,7 @@
 FILE = "~/shares"
 
 
-def add(url, description=""):
+def add(user, page, description=""):
     # write to file
     # ...
     return True
