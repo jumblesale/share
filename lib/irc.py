@@ -84,7 +84,7 @@ def _listen_to_irc(s, channel):
 
 # let the channel know there was a new share
 def _send_share_notification(s, channel, user, page, description="", nick=""):
-    url = "http://tilde.town/%s/%s" % (user, page)
+    url = "http://tilde.town/~%s/%s" % (user, page)
     # make sure the description isn't too long
     if len(description) > 128 or "" == description:
         description = ""
