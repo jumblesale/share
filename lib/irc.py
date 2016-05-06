@@ -21,13 +21,13 @@ def _share(data):
     try:
         parts = data.split(" ")
         user = parts[0]
-        url = parts[1]
+        page = parts[1]
         # then just get everything from the 2nd space to the end
         description = " ".join(parts[2:])
-        client.share(user, url, description)
+        client.share(user, page, description)
         # we return the parts cause they're useful for later
-        return user, url, description
-    except ValueError:
+        return user, page, description
+    except IndexError:
         raise FormatError
     # the client could fail so let's deal with it
     except(client.ConnectionError,
@@ -56,7 +56,7 @@ def _listen_to_irc(s, channel):
             nick = msg[(msg.index(":") + 1):(msg.index("!"))]
             # the actual message comes after the second colon
             contents = msg.split(":")[2]
-        except ValueError:
+        except (ValueError, IndexError):
             # it didn't have a nick or a message, we don't care
             continue
 
