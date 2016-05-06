@@ -10,31 +10,38 @@ class SubscriptionError(Exception): pass
 class ShareError(Exception): pass
 
 
+# perform handshake with the server
+# (just respond with 'hello')
 def _handshake(c):
     response = _receive(c)
-    if response != "hello":
+    if response != "hello?":
+        print "expected %s but got %s" % ("hello?", response)
         return False
     else:
-        c.send("hello")
+        _send_message(c, "hello")
         return True
 
 
+# send a message over the socket connection
 def _send_message(c, message):
-    c.send(message)
+    c.sendall(message)
 
 
-def _listen(c, handler):
-    while True:
-        handler(_receive(c))
+# start listening for new data from the server
+def _listen(c, handler, args):
+    while handler(_receive(c), *args) is True:
         time.sleep(0.01)
 
 
+# receive data from the server
 def _receive(c):
-    return c.recv(128).rstrip().lower()
+    received = c.recv(128).lower().rstrip()
+    return received
 
 
+# subscribe to notifications from the server
 def _subscribe(c):
-    c.send("subscribe")
+    _send_message(c, "subscribe")
     # the server should always respond SUBSCRIBED
     # to let us know it worked ok
     expected = "subscribed"
@@ -44,6 +51,7 @@ def _subscribe(c):
     return True
 
 
+# open a socket connection
 def _connect(ip=settings.ip, port=settings.port):
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
@@ -66,20 +74,20 @@ def _connect(ip=settings.ip, port=settings.port):
 # user:
 #    the townie who created this page without the ~
 #    (insom, karlen, &c.)
-# url:
+# page:
 #    the relative location of the page, so
 #    ~joe/modestproposal.html would be 'modestproposal.html'
 # description:
 #    an optional description of the link
-# returns: True or False depending on if it succeeds or not
+# returns:
+#    None
 # throws:
 #     ConnectionError
 #     HandShakeError
 #     ShareError
-def share(user, url, description=""):
-    url = "https://%s/~%s/%s" % ("tilde.town", user, url)
+def share(user, page, description=""):
     client = _connect()
-    _send_message(client, "%s %s %s" % ("share", url, description))
+    _send_message(client, "%s %s %s %s" % ("share", user, page, description))
     client.close()
 
 
@@ -87,14 +95,20 @@ def share(user, url, description=""):
 #
 # handler:
 #     the method to call with the received data
+# args:
+#     a tuple of any arguments you want passed to the handler
+# returns:
+#     None
 # throws:
 #     ConnectionError
 #     HandShakeError
 #     ShareError
 #     SubscriptionError
-def listen(handler):
+def listen(handler, args):
     client = _connect()
-    _listen(client, handler)
+    time.sleep(0.1)
+    _subscribe(client)
+    _listen(client, handler, args)
 
 
 if __name__ == "__main__":

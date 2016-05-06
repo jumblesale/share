@@ -3,6 +3,7 @@ import socket
 import thread
 import time
 import settings
+import store
 
 
 _connections = {}
@@ -32,20 +33,24 @@ def _listen(ip=settings.ip, port=settings.port):
 def _handler(connection, connection_id):
     logger.log("started new thread for connection %s" % connection_id)
     while True:
-        time.sleep(0.01)
-        msg = connection.recv(256).rstrip()
+        time.sleep(0.1)
+        try:
+            msg = _receive(connection)
+        except socket.error as err:
+            logger.log("something went wrong with connection %s, closing\n%s"
+                       % (connection_id, err))
+            _close_connection(connection, connection_id)
         # get the first word in the command
         cmd = msg.lower().split(" ")[0]
         if "quit" == cmd or "" == cmd:
             _close_connection(connection, connection_id)
             break
         else:
-            logger.log("received %s from connection %s" % (cmd, connection_id))
+            logger.log('received "%s" from connection %s' % (msg, connection_id))
             if "share" == cmd:
-                to_share = msg[msg.index(" ") + 1:]
-                _share(to_share)
-                _send_message(connection, "SHARED")
-                return
+                if _share(msg) is True:
+                    _send_message(connection, "SHARED")
+                continue
             if "subscribe" == cmd:
                 _add_subscriber(connection, connection_id)
                 _send_message(connection, "SUBSCRIBED")
@@ -53,24 +58,44 @@ def _handler(connection, connection_id):
 
 
 def _share(msg):
-    logger.log("sharing %s" % msg)
-    url = msg[0:msg.index(" ")]
-    description = msg[msg.index(" ") + 1:]
-    global _connections
-    for connection_id, connection in _subscribers.iteritems():
-        _send_message(connection, url)
-        _send_message(connection, description)
+    logger.log('sharing "%s"' % msg)
+    # make sure the message looks right
+    try:
+        # split up the message
+        parts = msg.split(" ")
+        user = parts[1]
+        page = parts[2]
+        description = " ".join(parts[3:])
+        # send it to everyone!
+        global _connections
+        for connection_id, connection in _subscribers.iteritems():
+            _send_share(connection, user, page, description)
+        return True
+    except IndexError:
+        logger.log('"%s" was malformed' % msg)
+        return False
+
+
+def _send_share(connection, user, page, description):
+    message = "%s %s %s" % (user, page, description)
+    _send_message(connection, message)
 
 
 def _send_message(connection, message):
-    connection.send("%s\n" % message)
+    connection.sendall("%s\n" % message)
+
+
+def _receive(connection):
+    return connection.recv(1024).rstrip().lower()
 
 
 def _perform_handshake(connection):
-    connection.send("hello")
-    if "hello" != connection.recv(8).rstrip().lower():
-        logger.log("handshake failed, sorry :(. ")
-        connection.send("you must respond with 'hello' to use this service")
+    _send_message(connection, "hello?")
+    response = connection.recv(16).rstrip().lower()
+    if "hello" != response:
+        logger.log("handshake failed, sorry :( got %s" % response)
+        _send_message(connection, "you must respond with 'hello' "
+                                  "to use this service")
         connection.close()
         return False
     return True
@@ -97,7 +122,13 @@ def _add_subscriber(connection, connection_id):
 
 def _close_connection(connection, connection_id):
     global _connections, _subscribers
-    _send_message(connection, "thanks for dropping by!!")
+    try:
+        # connection might have already gone
+        _send_message(connection, "thanks for dropping by!!")
+    except socket.error:
+        logger.log("tried to wish connection %s farewell but "
+                   "they were already gone" % connection_id)
+        pass
     connection.close()
     _connections.pop(connection_id, None)
     # check if it was a subscriber
