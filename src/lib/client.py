@@ -1,6 +1,7 @@
 import socket
-import settings
 import time
+
+import settings
 
 
 # our error classes

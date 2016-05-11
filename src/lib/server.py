@@ -1,11 +1,11 @@
-import logger
 import socket
 import thread
 import threading
 import time
+
+import logger
 import settings
 import store
-
 
 _connections = {}
 _subscribers = {}
