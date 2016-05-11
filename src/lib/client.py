@@ -32,6 +32,7 @@ def _send_message(c, message):
 def _listen(c, handler, args):
     while handler(_receive(c), *args) is True:
         time.sleep(0.01)
+    c.close()
 
 
 # receive data from the server

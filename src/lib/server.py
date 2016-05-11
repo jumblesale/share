@@ -72,9 +72,7 @@ def _share(msg):
         page = parts[2]
         description = " ".join(parts[3:])
         (success, errors) = _validate_share(user=user, page=page, description=description)
-        print success
-        print errors
-        if success[0] is False:
+        if success is False:
             logger.log('share failed with message: "%s"' % "; ".join(errors))
             return False
         # send it to everyone!
