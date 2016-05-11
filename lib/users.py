@@ -42,7 +42,3 @@ def user_page_exists(user, page):
     if os.path.isfile("%s/%s/%s/%s" % ("/home", user, "public_html", page)):
         return True
     return False
-
-
-if __name__ == "__main__":
-    print user_page_exists("jumblesale", "ksp/index.html")

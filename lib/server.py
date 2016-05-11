@@ -1,6 +1,7 @@
 import logger
 import socket
 import thread
+import threading
 import time
 import settings
 import store
@@ -9,6 +10,7 @@ import store
 _connections = {}
 _subscribers = {}
 _connection_id = 0
+_storage_lock = threading.Lock()
 
 
 def _listen(ip=settings.ip, port=settings.port):
@@ -71,7 +73,9 @@ def _share(msg):
         for connection_id, connection in _subscribers.iteritems():
             _send_share(connection, user, page, description)
         # save it to disk
+        _storage_lock.acquire()
         store.add(user, page, description)
+        _storage_lock.release()
         return True
     except IndexError:
         logger.log('"%s" was malformed' % msg)

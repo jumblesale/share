@@ -16,7 +16,7 @@ class FormatError(Exception): pass
 
 # connect to the share server and send along a new share
 def _share(user, page, description):
-    print 'sharing "%s"...' % data
+    print 'sharing "%s/%s - %s"...' % (user, page, description)
     try:
         client.share(user, page, description)
     # the client could fail so let's deal with it
