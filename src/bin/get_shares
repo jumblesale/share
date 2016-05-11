@@ -1,0 +1,76 @@
+#!/usr/bin/python
+
+import sys
+import argparse
+import os
+import datetime
+
+# import our libs
+LIB_PATH = "%s/../%s" % (os.path.dirname(os.path.abspath(__file__)), "lib")
+sys.path.append(LIB_PATH)
+
+import client
+
+TIME_MULTIPLIERS = {
+    "seconds": 1,
+    "minutes": 60,
+    "hours":   60 * 60,
+    "days":    60 * 60 * 24,
+    "weeks":   60 * 60 * 24 * 7,
+    "years":   60 * 60 * 24 * 365
+}
+
+
+def get_shares(n=0, time=None):
+    if time is not None:
+        parts = args.time.split("=")
+        try:
+            if parts[0] not in TIME_MULTIPLIERS.keys():
+                print "%s is not a supported time unit" % parts[0]
+                sys.exit(1)
+            seconds = int(parts[1]) * TIME_MULTIPLIERS[parts[0]]
+            difference = datetime.timedelta(seconds=seconds)
+            return client.get_shares(n=n, since=datetime.datetime.now() - difference)
+        except IndexError:
+            print "sorry, \"%s\" is an unsupported date format :(\n" \
+                   'try something more like --time="days=2"' % time
+            sys.exit(1)
+        except ValueError:
+            print "%s doesn't seem to be a number" % parts[1]
+            sys.exit(1)
+    else:
+        return client.get_shares(n=n)
+
+
+def pretty_print_shares(s):
+    for share in s:
+        print share
+
+
+def dump_shares(s):
+    for share in s:
+        print "\t".join([
+            str(share["date"]),
+            share["user"],
+            share["page"],
+            share["description"],
+        ])
+
+
+parser = argparse.ArgumentParser(description='share a wonderful creation')
+parser.add_argument('-n', metavar='N', type=int, default=0,
+                    help='limit how many results to display')
+parser.add_argument('--time', metavar='T', type=str,
+                    help='get only shares after a certain time '
+                         'can be one of: %s - e.g. --time="months=3"'
+                         % ", ".join(TIME_MULTIPLIERS.keys()))
+parser.add_argument('--pretty', default=False, action="store_true",
+                    help='pretty print the result?')
+
+args = parser.parse_args()
+
+shares = get_shares(args.n, args.time)
+if args.pretty is False:
+    dump_shares(shares)
+else:
+    pretty_print_shares(shares)

@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 import sys
 import os
 import argparse
@@ -20,6 +22,10 @@ parser.add_argument('--description', metavar='D', type=str, default="",
 
 args = parser.parse_args()
 
-client.share(args.user, args.page, args.description)
-
-print "thank you for sharing %s/%s! users on tilde.town will be notified" % (args.user, args.page)
+try:
+    if client.share(args.user, args.page, args.description) is True:
+        print "thank you for sharing %s/%s! users on tilde.town will be notified" % (args.user, args.page)
+    else:
+        print "whoops, something went wrong!"
+except Exception as err:
+    print "sharing failed with error %s" % err

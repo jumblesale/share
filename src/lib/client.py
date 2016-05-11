@@ -1,6 +1,6 @@
 import socket
 import time
-
+import store
 import settings
 
 
@@ -90,6 +90,9 @@ def share(user, page, description=""):
     client = _connect()
     time.sleep(0.1)
     _send_message(client, "%s %s %s %s" % ("share", user, page, description))
+    response = _receive(client)
+    if response != "SHARED":
+        raise ValueError
     client.close()
 
 
@@ -113,5 +116,8 @@ def listen(handler, args):
     _listen(client, handler, args)
 
 
-if __name__ == "__main__":
-    share("jumblesale", "ksp.html", "the continuing adventures of ksp")
+# get a list of existing shares, oldest first
+# n:     the number of shares to retrieve
+# since: time (in seconds) to go back for shares
+def get_shares(n=0, since=None):
+    return store.load(n, since)

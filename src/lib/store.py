@@ -15,7 +15,6 @@ def add(user, page, description=""):
 
 # load shares
 def load(n=0, since=None):
-    print since
     with open(FILE, "r") as f:
         lines = []
         if n == 0 and since is None:

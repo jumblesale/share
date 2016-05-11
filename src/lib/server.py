@@ -6,6 +6,7 @@ import time
 import logger
 import settings
 import store
+import users
 
 _connections = {}
 _subscribers = {}
@@ -52,6 +53,8 @@ def _handler(connection, connection_id):
             if "share" == cmd:
                 if _share(msg) is True:
                     _send_message(connection, "SHARED")
+                else:
+                    _send_message(connection, 'ERROR:1:FORMATTING')
                 continue
             if "subscribe" == cmd:
                 _add_subscriber(connection, connection_id)
@@ -68,6 +71,12 @@ def _share(msg):
         user = parts[1]
         page = parts[2]
         description = " ".join(parts[3:])
+        (success, errors) = _validate_share(user=user, page=page, description=description)
+        print success
+        print errors
+        if success[0] is False:
+            logger.log('share failed with message: "%s"' % "; ".join(errors))
+            return False
         # send it to everyone!
         global _connections
         for connection_id, connection in _subscribers.iteritems():
@@ -80,6 +89,18 @@ def _share(msg):
     except IndexError:
         logger.log('"%s" was malformed' % msg)
         return False
+
+
+def _validate_share(user, page, description):
+    success = True
+    errors = []
+    if users.user_page_exists(user, page) is False:
+        success = False,
+        errors.append("%s/%s does not exist" % (user, page))
+    if len(description) > 128:
+        success = False,
+        errors.append("description was too long")
+    return success, errors
 
 
 def _send_share(connection, user, page, description):

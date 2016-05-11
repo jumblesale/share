@@ -39,6 +39,4 @@ def get_subscribed_users():
 def user_page_exists(user, page):
     if not user_exists(user):
         return False
-    if os.path.isfile("%s/%s/%s/%s" % ("/home", user, "public_html", page)):
-        return True
-    return False
+    return os.path.isfile("%s/%s/%s/%s" % ("/home", user, "public_html", page))
