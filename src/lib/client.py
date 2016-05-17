@@ -2,6 +2,7 @@ import socket
 import time
 import store
 import settings
+import sys
 
 
 # our error classes
@@ -92,9 +93,25 @@ def share(user, page, description=""):
     time.sleep(0.1)
     _send_message(client, "%s %s %s %s" % ("share", user, page, description))
     response = _receive(client)
-    if response != "SHARED":
-        raise ValueError
+    if response.upper() != "SHARED":
+        _handle_error(response)
     client.close()
+
+
+def _handle_error(response):
+    parts = response.split(":")
+    try:
+        if parts[0] != "error":
+            raise ShareError(
+                "something went wrong but the server's response was malformed"
+            )
+        error = parts[1]
+        if error == "1":
+            raise ShareError(
+                "there was a problem with the formatting of that message"
+            )
+    except IndexError:
+        raise ShareError("could not parse response %s" % response)
 
 
 # listen for new shares
@@ -122,3 +139,15 @@ def listen(handler, args):
 # since: time (in seconds) to go back for shares
 def get_shares(n=0, since=None):
     return store.load(n, since)
+
+
+if __name__ == "__main__":
+    try:
+        user = sys.argv[1] or ""
+        page = sys.argv[2] or ""
+        description = sys.argv[3] or ""
+        share(user, page, description)
+    except IndexError:
+        print 'usage: python client.py <user> <page> [<description>]'
+    except ShareError as err:
+        print 'share failed with message: "%s"' % err

@@ -6,9 +6,6 @@ import client
 import settings
 import users
 
-
-
-
 # a flag to get us out of listening
 terminate = False
 
@@ -20,7 +17,7 @@ class FormatError(Exception): pass
 
 # connect to the share server and send along a new share
 def _share(user, page, description):
-    print 'sharing "%s/%s - %s"...' % (user, page, description)
+    print 'sharing "%s/%s"...' % (user, page)
     try:
         client.share(user, page, description)
     # the client could fail so let's deal with it
@@ -112,7 +109,8 @@ def _listen_to_irc(s, channel):
             except ShareError as err:
                 # the client failed
                 _send_message(s, channel,
-                              'sharing failed with error "%s"' % err)
+                              'something went wrong sharing that. '
+                              'check the log for details')
             continue
 
 

@@ -49,11 +49,12 @@ def _handler(connection, connection_id):
             _close_connection(connection, connection_id)
             break
         else:
-            logger.log('received "%s" from connection %s' % (msg, connection_id))
+            logger.log('received "%s" from connection %d' % (msg, connection_id))
             if "share" == cmd:
                 if _share(msg) is True:
                     _send_message(connection, "SHARED")
                 else:
+                    # for now it's always going to be formatting
                     _send_message(connection, 'ERROR:1:FORMATTING')
                 continue
             if "subscribe" == cmd:
@@ -63,7 +64,7 @@ def _handler(connection, connection_id):
 
 
 def _share(msg):
-    logger.log('sharing "%s"' % msg)
+    logger.log('received "%s"' % msg)
     # make sure the message looks right
     try:
         # split up the message
@@ -71,9 +72,11 @@ def _share(msg):
         user = parts[1]
         page = parts[2]
         description = " ".join(parts[3:])
-        (success, errors) = _validate_share(user=user, page=page, description=description)
-        if success is False:
+        # does the message pass validation?
+        errors = _validate_share(user=user, page=page, description=description)
+        if len(errors) > 0:
             logger.log('share failed with message: "%s"' % "; ".join(errors))
+            # tell the client it failed
             return False
         # send it to everyone!
         global _connections
@@ -90,15 +93,12 @@ def _share(msg):
 
 
 def _validate_share(user, page, description):
-    success = True
     errors = []
     if users.user_page_exists(user, page) is False:
-        success = False,
         errors.append("%s/%s does not exist" % (user, page))
     if len(description) > 128:
-        success = False,
         errors.append("description was too long")
-    return success, errors
+    return errors
 
 
 def _send_share(connection, user, page, description):
