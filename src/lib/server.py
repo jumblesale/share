@@ -5,8 +5,11 @@ import time
 
 import logger
 import settings
-import store
 import users
+
+# adapters
+import store
+import rss
 
 _connections = {}
 _subscribers = {}
@@ -83,13 +86,27 @@ def _share(msg):
         for connection_id, connection in _subscribers.iteritems():
             _send_share(connection, user, page, description)
         # save it to disk
-        _storage_lock.acquire()
-        store.add(user, page, description)
-        _storage_lock.release()
+        _save_to_disk(user, page, description)
         return True
     except IndexError:
         logger.log('"%s" was malformed' % msg)
         return False
+
+
+# use the store library to save this to disk
+def _save_to_disk(user, page, description):
+    global _storage_lock
+    _storage_lock.acquire()
+    try:
+        store.add(user, page, description)
+    except IOError as err:
+        logger.log('saving to disk failed with error "%s"' % err)
+    _storage_lock.release()
+
+
+# use the rss library to add a new rss entry
+def _save_to_rss(user, page, description):
+    rss.add(user, page, description)
 
 
 def _validate_share(user, page, description):
