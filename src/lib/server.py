@@ -10,6 +10,11 @@ import users
 # adapters
 import store
 import rss
+import tweet
+
+_adapters = [
+    store, rss, tweet
+]
 
 _connections = {}
 _subscribers = {}
@@ -85,8 +90,8 @@ def _share(msg):
         global _connections
         for connection_id, connection in _subscribers.iteritems():
             _send_share(connection, user, page, description)
-        # save it to disk
-        _save_to_disk(user, page, description)
+        # send notifications
+        _save_to_adapters(user, page, description)
         return True
     except IndexError:
         logger.log('"%s" was malformed' % msg)
@@ -94,19 +99,16 @@ def _share(msg):
 
 
 # use the store library to save this to disk
-def _save_to_disk(user, page, description):
-    global _storage_lock
+def _save_to_adapters(user, page, description):
+    global _storage_lock, _adapters
     _storage_lock.acquire()
-    try:
-        store.add(user, page, description)
-    except IOError as err:
-        logger.log('saving to disk failed with error "%s"' % err)
+    for adapter in _adapters:
+        try:
+            adapter.add(user, page, description)
+        # store and rss both do disk operations
+        except IOError as err:
+            logger.log('saving to disk failed with error "%s"' % err)
     _storage_lock.release()
-
-
-# use the rss library to add a new rss entry
-def _save_to_rss(user, page, description):
-    rss.add(user, page, description)
 
 
 def _validate_share(user, page, description):

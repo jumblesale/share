@@ -8,3 +8,5 @@ irc = {
     "host": "127.0.0.1",
     "port": 6667,
 }
+
+rss_location = '/home/jumblesale/rss.xml'

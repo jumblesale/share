@@ -1,3 +1,6 @@
+import settings
+
+
 # uses ~karlen's magnificent rss tool
 def add(user, page, description):
     tildeurl = "http://tilde.town/~" + user + "/" + page
