@@ -10,3 +10,5 @@ irc = {
 }
 
 rss_location = '/home/jumblesale/rss.xml'
+shares_location = '/home/jumblesale/shares'
+rss_limit = 10

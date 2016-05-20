@@ -1,21 +1,19 @@
 import datetime
-
-
-FILE = "/home/jumblesale/shares"
+import settings
 
 
 # add a new share
-def add(user, page, description=""):
+def add(user, page, description="", file=settings.shares_location):
     dt = datetime.datetime.utcnow()
-    with open(FILE, "a") as f:
+    with open(file, "a") as f:
         f.write(";".join([dt.isoformat(), user, page, description]))
         f.write("\n")
         f.close()
 
 
 # load shares
-def load(n=0, since=None):
-    with open(FILE, "r") as f:
+def load(n=0, since=None, file=settings.shares_location):
+    with open(file, "r") as f:
         lines = []
         if n == 0 and since is None:
             lines = f.read().splitlines()
